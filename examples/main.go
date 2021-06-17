@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	eureka "github.com/xuanbo/eureka-client"
+	eureka "github.com/huanghuangzym/eureka-client"
 )
 
 func main() {
@@ -26,7 +26,13 @@ func main() {
 		},
 	})
 	// start client, register、heartbeat、refresh
-	client.Start()
+	err := client.Connect()
+	if err != nil {
+		return
+	}
+
+	go client.Heartbeat()
+	go client.Refresh()
 
 	// http server
 	http.HandleFunc("/v1/services", func(writer http.ResponseWriter, request *http.Request) {
@@ -41,4 +47,5 @@ func main() {
 	if err := http.ListenAndServe(":10000", nil); err != nil {
 		fmt.Println(err)
 	}
+	client.DoUnRegister()
 }

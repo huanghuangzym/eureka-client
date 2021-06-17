@@ -22,26 +22,26 @@ type Client struct {
 }
 
 // Start 启动时注册客户端，并后台刷新服务列表，以及心跳
-func (c *Client) Start() {
+func (c *Client) Connect() error {
 	c.mutex.Lock()
 	c.Running = true
 	c.mutex.Unlock()
 	// 注册
-	if err := c.doRegister(); err != nil {
+	if err := c.DoRegister(); err != nil {
 		log.Println(err.Error())
-		return
+		return err
 	}
 	log.Println("register application instance successful")
-	// 刷新服务列表
-	go c.refresh()
-	// 心跳
-	go c.heartbeat()
-	// 监听退出信号，自动删除注册信息
-	go c.handleSignal()
+	return nil
+	/*
+		go c.Refresh()
+		go c.Heartbeat()
+		go c.handleSignal()
+	*/
 }
 
 // refresh 刷新服务列表
-func (c *Client) refresh() {
+func (c *Client) Refresh() {
 	for {
 		if c.Running {
 			if err := c.doRefresh(); err != nil {
@@ -58,13 +58,13 @@ func (c *Client) refresh() {
 }
 
 // heartbeat 心跳
-func (c *Client) heartbeat() {
+func (c *Client) Heartbeat() {
 	for {
 		if c.Running {
 			if err := c.doHeartbeat(); err != nil {
 				if err == ErrNotFound {
 					log.Println("heartbeat Not Found, need register")
-					if err = c.doRegister(); err != nil {
+					if err = c.DoRegister(); err != nil {
 						log.Printf("do register error: %s\n", err)
 					}
 					continue
@@ -81,12 +81,12 @@ func (c *Client) heartbeat() {
 	}
 }
 
-func (c *Client) doRegister() error {
+func (c *Client) DoRegister() error {
 	instance := c.Config.instance
 	return Register(c.Config.DefaultZone, c.Config.App, instance)
 }
 
-func (c *Client) doUnRegister() error {
+func (c *Client) DoUnRegister() error {
 	instance := c.Config.instance
 	return UnRegister(c.Config.DefaultZone, instance.App, instance.InstanceID)
 }
@@ -126,7 +126,7 @@ func (c *Client) handleSignal() {
 			fallthrough
 		case syscall.SIGTERM:
 			log.Println("receive exit signal, client instance going to de-register")
-			err := c.doUnRegister()
+			err := c.DoUnRegister()
 			if err != nil {
 				log.Println(err.Error())
 			} else {
