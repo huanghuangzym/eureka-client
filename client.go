@@ -148,6 +148,11 @@ func defaultConfig(config *Config) {
 	if config.DefaultZone == "" {
 		config.DefaultZone = "http://localhost:8761/eureka/"
 	}
+
+	if !strings.HasSuffix(config.DefaultZone, "/") {
+		config.DefaultZone = config.DefaultZone + "/"
+	}
+
 	if config.RenewalIntervalInSecs == 0 {
 		config.RenewalIntervalInSecs = 30
 	}
